@@ -27,23 +27,41 @@ app.use('/public', express.static(process.cwd() + '/public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// function connect to database
+myDB(async client=>{
+  const myDataBase = await client.db('database').collection('user');
 
-// function serialized user
-passport.serializeUser((user, done)=>{
-  done(null, user._id);
+  // direct to index
+  app.route('/').get((req, res) => {
+    res.render('index', {
+      title: 'Connected to Database', 
+      message: "Please login"
+    });
+  });
+
+  // function serialized user
+  passport.serializeUser((user, done)=>{
+    done(null, user._id);
+  });
+
+  // function deserialized user
+  passport.deserializeUser((id, done)=>{
+    myDataBase.findOne({ _id: new ObjectID(id) }, (err, doc) => {
+      done(null, doc);
+    });
+  });
+
+  // Error handling
+}).catch(e =>{
+  // direct to index
+  app.route('/').get((req, res) => {
+    res.render('index', {
+      title: e, 
+      message: 'Failed to Connect Database'
+    });
+  });
 });
 
-// function deserialized user
-passport.deserializeUser((id, done)=>{
-  //myDataBase.findOne({ _id: new ObjectID(id) }, (err, doc) => {
-    done(null, null);
-  //});
-});
-
-
-app.route('/').get((req, res) => {
-  res.render('index', {title: 'Hello', message: "Please log in"});
-});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
